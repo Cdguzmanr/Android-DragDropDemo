@@ -4,9 +4,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -19,10 +22,18 @@ import androidx.core.view.WindowInsetsCompat;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 
+/*
+https://snippets.cacher.io/snippet/875030698b29c73f56db
+ */
+
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
     HubConnection hubConnection;
     String hubConnectionId;
+    int width;
+    int height;
+    Board board;
+    Point point  = new Point();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +52,19 @@ public class MainActivity extends AppCompatActivity {
 
         initSignalR();
 
+        getScreenDims();
+        board = new Board(width);
+
         Log.d(TAG, "onCreate: End");
+    }
+
+    private void getScreenDims() {
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        width = size.x;
+        height = size.y;
+        Log.d(TAG, "getScreenDims: " + width + ":" + height);
     }
 
     private void initSignalR() {
@@ -86,6 +109,9 @@ public class MainActivity extends AppCompatActivity {
         int offsetY;
         Boolean isDragging;
 
+        String turn = "1";
+
+
         Bitmap aceOfSpades = BitmapFactory.decodeResource(getResources(), R.drawable.acespades);
         Bitmap aceOfHearts = BitmapFactory.decodeResource(getResources(), R.drawable.acehearts);
 
@@ -113,10 +139,10 @@ public class MainActivity extends AppCompatActivity {
             {
                 case MotionEvent.ACTION_DOWN:
                     Log.d(TAG, "onTouch: Down");
-                    Rect box = new Rect(posX,
-                            posY,
-                            posX + aceOfSpades.getWidth(),
-                            posY + aceOfSpades.getHeight());
+                   /* Rect box = new Rect(posX,
+                                        posY,
+                                        posX + aceOfSpades.getWidth(),
+                                        posY + aceOfSpades.getHeight());
 
                     // If not click in box, get out
                     if(!box.contains(x, y)) break;
@@ -126,7 +152,19 @@ public class MainActivity extends AppCompatActivity {
 
                     isDragging = true;
                     lastTouchX = x;
-                    lastTouchY = y;
+                    lastTouchY = y;*/
+
+                    point.x = (int)event.getX();
+                    point.y = (int)event.getY();
+
+                    if(board.hitTest(point, turn, this.getContext())!= "-1")
+                    {
+                        // Flip the turn
+                        turn = (turn == "1") ? "2" : "1";
+                    }
+
+                    invalidate();
+
                     break;
 
                 case MotionEvent.ACTION_MOVE:
@@ -152,14 +190,16 @@ public class MainActivity extends AppCompatActivity {
                     isDragging = false;
             }
 
-            return true; // If you return False, it wont work
+            return true;
         }
 
         @Override
         protected void onDraw(Canvas canvas)
         {
-            super.onDraw(canvas);
-            canvas.drawBitmap(aceOfSpades, posX, posY, null);
+            //super.onDraw(canvas);
+            //canvas.drawBitmap(aceOfSpades, posX, posY, null);
+            canvas.drawColor(Color.DKGRAY);
+            board.Draw(canvas);
 
         }
     }
